@@ -1,13 +1,13 @@
-/Modified the starting code of a button from http://www.instructables.com/id/How-to-control-your-TV-with-an-Arduino/
+//Modified the starting code of a button from http://www.instructables.com/id/How-to-control-your-TV-with-an-Arduino/
 //Tutorials and examples from https://www.arduino.cc/en/Tutorial/Button were used to help with the code 
 int IRledPin =  13;    // LED connected to digital pin 13 
-int buttonPin=2;      //Button connected to pin 2 
+int buttonPin = 3;      //Button connected to pin 3 
 int delayNum[]={790,1680,740}; //initializes the array of the delay numbers --> these numbers are currently place holders 
 int pulseNum[]={450,760,940}; //initializes the array of the pulse numbers --> these numbers are currently place holders 
 
 
 int i=0;             //initializes the counter i to 0 
-int buttonState=0;   //initializes the button reader variable 
+int buttonState;   //initializes the button reader variable 
  
 // The setup() method runs once, when the sketch starts
  
@@ -15,6 +15,7 @@ void setup()   {
   // initialize the IR digital pin as an output:
   pinMode(IRledPin, OUTPUT); 
   pinMode(buttonPin, INPUT);
+  digitalWrite(buttonPin, HIGH);
   Serial.begin(9600);
 }
  
@@ -22,7 +23,7 @@ void loop()
 {
 buttonState=digitalRead(buttonPin);
 
-if(buttonState==HIGH){
+if(buttonState==LOW){
 if(i<sizeof(delayNum)-1){
   delayMicroseconds(delayNum[i]); //Time off (Left Column on serial monitor)
   pulseIR(pulseNum[i]);           //Time on  (Right Column on serial monitor)
