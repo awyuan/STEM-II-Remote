@@ -2,9 +2,9 @@
 //Tutorials and examples from https://www.arduino.cc/en/Tutorial/Button were used to help with the code 
 int IRledPin =  13;    // LED connected to digital pin 13 
 int buttonPin = 3;      //Button connected to pin 3 
-int delayNum[]={790,1680,740}; //initializes the array of the delay numbers --> these numbers are currently place holders 
-int pulseNum[]={450,760,940}; //initializes the array of the pulse numbers --> these numbers are currently place holders 
-
+int channel1[]={740,1680,740}; //Channel Example
+int channel2[]={300,10,300,10,300}; //Channel Example 2
+int channel3[]={100,100,100,100,100}; //Channel Example 3
 
 int i=0;             //initializes the counter i to 0 
 int buttonState;   //initializes the button reader variable 
@@ -22,23 +22,43 @@ void setup()   {
 void loop()                     
 {
 buttonState=digitalRead(buttonPin);
-
-if(buttonState==LOW){
-if(i<sizeof(delayNum)-1){
-  delayMicroseconds(delayNum[i]); //Time off (Left Column on serial monitor)
-  pulseIR(pulseNum[i]);           //Time on  (Right Column on serial monitor)
-    delay(10000);  // wait twenty seconds (20 seconds * 1000 milliseconds)
+  if(buttonState==LOW){
+    if(i==1){
+      for(int c = 0; c<sizeof(channel1); i++){
+        if(c%2==0){
+          pulseIR(channel1[c]);
+        }
+        else{
+          delayMicroseconds(channel1[c]);
+        }
+      }
     i++;
-}
- 
- else{ 
-  delayMicroseconds(delayNum[i]); //Time off (Left Column on serial monitor)
-  pulseIR(pulseNum[i]);           //Time on  (Right Column on serial monitor)
-  delay(10000);  // wait twenty seconds (20 seconds * 1000 milliseconds)
-  i=0; 
- }
-}
+    }
+    if(i==2){
+      for(int c = 0; c<sizeof(channel1); i++){
+        if(c%2==1){
+          pulseIR(channel2[c]);
+        }
+        else{
+          delayMicroseconds(channel2[c]);
+        }
+      }
+    i++;
+    }
+    
+    else{ 
+       for(int c = 0; c<sizeof(channel1); i++){
+        if(c%2==1){
+          pulseIR(channel3[c]);
+        }
+        else{
+          delayMicroseconds(channel3[c]);
+        }
+      }
+      i=0;
+    }
   }
+}
 
  
 // This procedure sends a 38KHz pulse to the IRledPin 
