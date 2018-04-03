@@ -1,4 +1,3 @@
-
 //Modified the starting code of a button from http://www.instructables.com/id/How-to-control-your-TV-with-an-Arduino/
 //Tutorials and examples from https://www.arduino.cc/en/Tutorial/Button were used to help with the code 
 int IRledPin =  13;    // LED connected to digital pin 13 
@@ -40,6 +39,7 @@ buttonState=digitalRead(buttonPin);
           delayMicroseconds(channel1[c]);
         }
       }
+    delayMicroseconds(1000);
     i++;
     }
     else if(i==1){
@@ -56,6 +56,7 @@ buttonState=digitalRead(buttonPin);
           delayMicroseconds(channel2[c]);
         }
       }
+    delayMicroseconds(1000);
     i++;
     }
     
@@ -72,6 +73,7 @@ buttonState=digitalRead(buttonPin);
           delayMicroseconds(channel3[c]);
         }
       }
+      delayMicroseconds(1000);
       i=0;
     }
   }
@@ -98,3 +100,4 @@ void pulseIR(long microsecs) {
  
   sei();  // this turns them back on
 }
+
