@@ -6,6 +6,8 @@
 #include <Wire.h> 
 #include <LiquidCrystal.h>  
 #include <IRremote.h>
+#include <SD.h>
+#include <SPI.h>
 DS3231 rtc;
 IRsend irsend;
 int RECV_PIN = 1;
@@ -25,10 +27,12 @@ long NEC_0 = 0x28;
 
 int IRledPin =  13;    // LED connected to digital pin 13 
 int buttonPin = 5;      //Button connected to pin 3 
-int LEDalert = 12;      //LED connected to digital pin 12 for the RTC alert 
- long int channel1 [] = {824, 9180, 4580, 500, 4580, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 4560, 520, 4560, 520, 4580, 500, 4580, 500, 31480, 9200, 2260, 520, 24644, 9180, 2280, 520};
-long int channel2 [] = {35164, 9200, 4580, 500, 2280, 520, 4560, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 4580, 500, 4580, 500, 4580, 520, 34580, 9180, 2280, 520};
-long int channel3 [] = {6284, 9180, 4580, 500, 4580, 520, 4560, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 4580, 500, 2280, 520, 4560, 520, 4580, 500, 31480, 9200, 2260, 520, 24644, 9200, 2260, 520};
+int LEDalert = 12;      //LED connected to digital pin 12 for the RTC alert
+
+int CS_PIN = 10;       // SD Pin
+int counter = 1;       // Counter
+int c = 1;             // Counter 2
+File file;
 
 //favchannels[] = {1,2,3};
 int i=0;             //initializes the counter i to 0 
@@ -43,6 +47,7 @@ void setup()   {
   digitalWrite(buttonPin, HIGH);
   Serial.begin(9600);
   Wire.begin();
+  initializeSD();
   irrecv.enableIRIn();
   
   
@@ -60,6 +65,20 @@ void setup()   {
   rtc.setHour(7);  //This sets the hour of the RTC 
   rtc.setMinute(54); 
   rtc.setSecond(00); 
+
+//SD Card Reader:
+// Setup code checks for number of lines in file
+  openFile("channels.txt");
+  char ch;
+  while (file.available())
+  {
+    ch = file.read();
+    if (ch == ',')
+    {
+      counter++;  
+    }
+  }
+  closeFile();
 }
  
 void loop()                     
@@ -67,65 +86,36 @@ void loop()
   timeCheck();
   buttonState=digitalRead(buttonPin);
   //Serial.println(buttonState);
-  
+
+//SD Card Reader. 
+// Converts each line into a channel that is then sent
+  if(buttonState==LOW){
+    openFile("channels.txt");
+    if(c<counter+1){
+      long channel = atol(readLine().c_str());
+      irsend.sendNEC(channel,32);
+      c++;
+    }
+    else{
+      c=1;
+    }
+    closeFile();
+  }
   if(buttonState==LOW){
     digitalWrite(LEDalert, LOW); 
     Serial.println("In button state low");
     if(i==0){
-     Serial.println("In if loop");
-     irsend.sendNEC(NEC_1,32);
-    /*  for(int c = 0; c<sizeof(channel1)/sizeof(long int); c++){
-        Serial.println(channel1[c]);
-        if(c%2==1){
-          Serial.println("PulseBegin1");
-          pulseIR(channel1[c]);
-          Serial.println("PulseDone1");
-        }
-        else{
-          Serial.println("Delay1");
-          delayMicroseconds(channel1[c]);
-        }
-      }
-    delayMicroseconds(1000);
-    */
-    
-    i++;
+      Serial.println("In if loop");
+      irsend.sendNEC(NEC_1,32);
+      i++;
     }
     else if(i==1){
         irsend.sendNEC(NEC_2,32);
-/*      for(int c = 0; c<sizeof(channel2)/sizeof(long int); c++){
-        Serial.println(c);
-        Serial.println(sizeof(channel2));
-        if(c%2==1){
-          Serial.println("PulseBegin2");
-          pulseIR(channel2[c]);
-          Serial.println("PulseDone2");
-        }
-        else{
-          Serial.println("Delay2");
-          delayMicroseconds(channel2[c]);
-        }
-      }
-    delayMicroseconds(1000);*/
-    i++;
+        i++;
     }
     
     else { 
       irsend.sendNEC(NEC_3,32);
-     /*  for(int c = 0; c<sizeof(channel3)/sizeof(long int); c++){
-        Serial.println(c);
-        if(c%2==1){
-          Serial.println("PulseBegin3");
-          pulseIR(channel3[c]);
-          Serial.println("PulseDone3");
-        }
-        else{
-          Serial.println("Delay3");
-          delayMicroseconds(channel3[c]);
-        }
-      }
-      delayMicroseconds(1000);
-      */
       i=0;
     }
   }
@@ -158,9 +148,9 @@ void pulseIR(long microsecs) {
 void timeCheck(){
 bool h12 =false;
 bool PM =false; 
-  int h=rtc.getHour(h12, PM);   //these are both false because the rtc is in military mode 
-  int m=rtc.getMinute();
-  int s=rtc.getSecond(); 
+int h=rtc.getHour(h12, PM);   //these are both false because the rtc is in military mode 
+int m=rtc.getMinute();
+int s=rtc.getSecond(); 
                              //the first parameter is checking if it is the 12 hour and the second is checking if it is PM 
   if(buttonPin==HIGH){                //when the button is pressed the LED will turn off if not the LED will remain on from 5 minutes before the show to the time of the show 
     digitalWrite(LEDalert, LOW); 
@@ -185,4 +175,64 @@ bool PM =false;
     digitalWrite(LEDalert, HIGH); 
   }
 }
+void initializeSD()
+{
+  Serial.println("Initializing SD card...");
+  pinMode(CS_PIN, OUTPUT);
 
+  if (SD.begin())
+  {
+    Serial.println("SD card is ready to use.");
+  } else
+  {
+    Serial.println("SD card initialization failed");
+    return;
+  }
+}
+// Close the file!
+void closeFile()
+{
+  if (file)
+  {
+    file.close();
+    Serial.println("File closed");
+  }
+}
+// Open the file for reading!
+int openFile(char filename[])
+{
+  file = SD.open(filename);
+  if (file)
+  {
+    Serial.println("File opened with success!");
+    return 1;
+  } else
+  {
+    Serial.println("Error opening file...");
+    return 0;
+  }
+}
+// Read a line in the text file
+String readLine()
+{
+  String received = "";
+  char ch;
+  int debug = file.available();
+  //Serial.println(debug);
+  while (file.available())
+  {
+    //Serial.println(debug);
+    ch = file.read();
+    //Serial.println(ch); All char are read
+    if (ch == ',')
+    {
+      return String(received);    
+    }
+    else
+    {
+      received += ch;
+      //Serial.println(received);
+    }
+  }
+  return "Reached End of While Loop?";
+}
