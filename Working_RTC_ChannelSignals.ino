@@ -26,12 +26,13 @@ long NEC_9 = 0x2B;
 long NEC_0 = 0x28;
 
 int IRledPin =  13;    // LED connected to digital pin 13 
-int buttonPin = 5;      //Button connected to pin 3 
+int buttonPin = 5;      //Button connected to pin 5 
 int LEDalert = 12;      //LED connected to digital pin 12 for the RTC alert
 
 int CS_PIN = 10;       // SD Pin
 int counter = 1;       // Counter
 int c = 1;             // Counter 2
+long channel;          // Sent Channels
 File file;
 
 //favchannels[] = {1,2,3};
@@ -92,7 +93,9 @@ void loop()
   if(buttonState==LOW){
     openFile("channels.txt");
     if(c<counter+1){
-      long channel = atol(readLine().c_str());
+      for(int cmCheck = 0; cmCheck<c; cmCheck++){
+        channel = atol(readLine().c_str());
+      }
       irsend.sendNEC(channel,32);
       c++;
     }
@@ -217,7 +220,7 @@ String readLine()
 {
   String received = "";
   char ch;
-  int debug = file.available();
+  //int debug = file.available();
   //Serial.println(debug);
   while (file.available())
   {
