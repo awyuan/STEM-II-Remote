@@ -6,6 +6,8 @@
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <IRremote.h>
+#include <SD.h>
+#include <SPI.h>
 DS3231 rtc;
 IRsend irsend;
 int RECV_PIN = 1;
@@ -47,14 +49,18 @@ unsigned int  UP[35] = {8850, 4400, 500, 2200, 450, 2200, 500, 4400, 500, 2200, 
 unsigned int  DOWN[35] = {8850, 4400, 500, 4400, 500, 2150, 500, 4400, 500, 2200, 500, 4400, 500, 4400, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 4400, 500}; // UNKNOWN 5A1A483D
 unsigned int  OK[35] = {8850, 4400, 500, 4400, 500, 2200, 450, 2200, 500, 2200, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN CB3CC07F
 
-
+int CS_PIN = 10;       // SD Pin
+int counter = 1;       // Counter
+int c = 1;             // Counter 2
+long channel;          // Sent Channels
+File file;
 
 int IRledPin =  3;    // LED connected to digital pin 13
 int buttonPin = 5;      //Button connected to pin 3
 int LEDalert = 12;      //LED connected to digital pin 12 for the RTC alert
-long int channel1 [] = {824, 9180, 4580, 500, 4580, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 4560, 520, 4560, 520, 4580, 500, 4580, 500, 31480, 9200, 2260, 520, 24644, 9180, 2280, 520};
-long int channel2 [] = {35164, 9200, 4580, 500, 2280, 520, 4560, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 4580, 500, 4580, 500, 4580, 520, 34580, 9180, 2280, 520};
-long int channel3 [] = {6284, 9180, 4580, 500, 4580, 520, 4560, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 4580, 500, 2280, 520, 4560, 520, 4580, 500, 31480, 9200, 2260, 520, 24644, 9200, 2260, 520};
+//long int channel1 [] = {824, 9180, 4580, 500, 4580, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 4560, 520, 4560, 520, 4580, 500, 4580, 500, 31480, 9200, 2260, 520, 24644, 9180, 2280, 520};
+//long int channel2 [] = {35164, 9200, 4580, 500, 2280, 520, 4560, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 4580, 500, 4580, 500, 4580, 520, 34580, 9180, 2280, 520};
+//long int channel3 [] = {6284, 9180, 4580, 500, 4580, 520, 4560, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 4580, 500, 2280, 520, 4560, 520, 4580, 500, 31480, 9200, 2260, 520, 24644, 9200, 2260, 520};
 
 //favchannels[] = {1,2,3};
 int i = 0;           //initializes the counter i to 0
@@ -69,6 +75,7 @@ void setup()   {
   digitalWrite(buttonPin, HIGH);
   Serial.begin(9600);
   Wire.begin();
+  initializeSD();
   irrecv.enableIRIn();
 
 
@@ -101,25 +108,58 @@ void loop()
       Serial.println("In if loop");
       //    irsend.sendSony(0xa90, 12);
       digitalWrite(LEDalert, HIGH);
-      irsend.sendRaw(NEC2, sizeof(NEC2), 38);
       digitalWrite(LEDalert, LOW);
       delay(100);
       i++;
+      
+      openFile("channels.txt");
+      if(c<counter+1){
+      for(int cmCheck = 0; cmCheck<c; cmCheck++){
+        channel = atol(readLine().c_str());
+        Serial.println(channel);
+      }
+      irsend.sendRaw(NEC2, sizeof(NEC2), 38);
+      c++;
     }
+    else{
+      c=1;
+    }
+    closeFile();
+     delay(100);
+      i++;
+    }
+    
     else if (i == 1) {
+      if(c<counter+1){
+      for(int cmCheck = 0; cmCheck<c; cmCheck++){
+        channel = atol(readLine().c_str());
+        Serial.println(channel);
+      }
       irsend.sendRaw(NEC5, sizeof(NEC5), 38);
+      c++;
+    }
+    else{
+      c=1;
+    }
+    closeFile();
+      
       delay(100);
       i++;
     }
 
     else {
+        if(c<counter+1){
+      for(int cmCheck = 0; cmCheck<c; cmCheck++){
+        channel = atol(readLine().c_str());
+        Serial.println(channel);
+      }
       irsend.sendRaw(NEC7, sizeof(NEC7), 38);
       delay(100);
       i = 0;
     }
   }
 }
-
+}
 
 // This procedure sends a 38KHz pulse to the IRledPin
 // for a certain # of microseconds. We'll use this whenever we need to send codes
@@ -144,7 +184,7 @@ void pulseIR(long microsecs) {
 
 //This method checks the time with the rtc and sets that time to a variable
 
-/*
+
   void timeCheck(){
   bool h12 =false;
   bool PM =false;
@@ -181,4 +221,67 @@ void pulseIR(long microsecs) {
     digitalWrite(LEDalert, HIGH);
   }
   }
-*/
+void initializeSD()
+{
+  Serial.println("Initializing SD card...");
+  pinMode(CS_PIN, OUTPUT);
+
+  if (SD.begin())
+  {
+    Serial.println("SD card is ready to use.");
+  } else
+  {
+    Serial.println("SD card initialization failed");
+    return;
+  }
+}
+
+// Close the file!
+void closeFile()
+{
+  if (file)
+  {
+    file.close();
+    Serial.println("File closed");
+  }
+}
+// Open the file for reading!
+int openFile(char filename[])
+{
+  file = SD.open(filename);
+  if (file)
+  {
+    Serial.println("File opened with success!");
+    return 1;
+  } else
+  {
+    Serial.println("Error opening file...");
+    return 0;
+  }
+}
+// Read a line in the text file
+String readLine()
+{
+  String received = "";
+  char ch;
+  //int debug = file.available();
+  //Serial.println(debug);
+  while (file.available())
+  {
+    //Serial.println(debug);
+    ch = file.read();
+    //Serial.println(ch); All char are read
+    if (ch == '\n')
+    {
+      return String(received);    
+    }
+    else
+    {
+      received += ch;
+      //Serial.println(received);
+    }
+  }
+  return "Reached End of While Loop?";
+}
+
+
