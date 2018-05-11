@@ -26,13 +26,14 @@ long NEC_9 = 0x2B;
 long NEC_0 = 0x28;
 
 int IRledPin =  13;    // LED connected to digital pin 13 
-int buttonPin = 5;      //Button connected to pin 5 
-int LEDalert = 12;      //LED connected to digital pin 12 for the RTC alert
+int buttonPin = 5;     // Button connected to pin 5 
+int LEDalert = 12;     // LED connected to digital pin 12 for the RTC alert
 
+int CommaC = 1;        // Comma Counter
 int CS_PIN = 10;       // SD Pin
 int counter = 1;       // Counter
 int c = 1;             // Counter 2
-long channel;          // Sent Channels
+String channel;        // Channel Strings
 File file;
 
 //favchannels[] = {1,2,3};
@@ -74,6 +75,9 @@ void setup()   {
   while (file.available())
   {
     ch = file.read();
+    if(ch == ','){
+      CommaC++;
+    }
     if (ch == '\n')
     {
       counter++;  
@@ -87,16 +91,24 @@ void loop()
   timeCheck();
   buttonState=digitalRead(buttonPin);
   //Serial.println(buttonState);
+  int sentChannel[CommaC];
 
 //SD Card Reader. 
 // Converts each line into a channel that is then sent
   if(buttonState==LOW){
     openFile("channels.txt");
     if(c<counter+1){
-      for(int cmCheck = 0; cmCheck<c; cmCheck++){
-        channel = atol(readLine().c_str());
+      for(int nLCheck = 0; nLCheck<c; nLCheck++){
+        //channel = atol(readLine().c_str());
+        channel = readLine();
+        for(int cMCheck = 0; cMCheck<CommaC/counter; cMCheck++){
+          char num = channel.charAt(cMCheck);
+          String NumIR = NumIR + num;
+          int value = NumIR.toInt();
+          sentChannel[cMCheck]=value;
+        }
       }
-      irsend.sendNEC(channel,32);
+      //irsend.sendNEC(channel,32);
       c++;
     }
     else{
@@ -227,7 +239,7 @@ String readLine()
     //Serial.println(debug);
     ch = file.read();
     //Serial.println(ch); All char are read
-    if (ch == '\n')
+    if (ch == '/n')
     {
       return String(received);    
     }
