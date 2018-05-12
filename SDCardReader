@@ -239,7 +239,7 @@ String readLine()
     //Serial.println(debug);
     ch = file.read();
     //Serial.println(ch); All char are read
-    if (ch == '/n')
+    if (ch == '\n')
     {
       return String(received);    
     }
