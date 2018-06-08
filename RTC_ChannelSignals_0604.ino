@@ -13,16 +13,16 @@ IRsend irsend;
 int RECV_PIN = 1;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
-int jstickVER_pin = A1;
-int jstickHOR_pin = A0;
+int jstickVER_pin = A7;
+int jstickHOR_pin = A1;
 //the horizontal and vertical pins are swapped because of the way the joystick will be oriented
-int jstickclick_pin = 12; 
+int jstickclick_pin = 10; 
 boolean debounceButton(int buttonPin);
 
 
 //measured using IRRecvDumpv2 and Arduino serial
 //This is where you will need to enter your oln codes that you take from the IR receiver 
-unsigned int  NEC1[35] = {8850, 4400, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 4400, 450, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 92DF9279
+  unsigned int  NEC1[35] = {8850, 4400, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 4400, 450, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 92DF9279
 unsigned int  NEC2[35] = {8850, 4400, 500, 2200, 450, 4450, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 87CDD0EF
 unsigned int  NEC3[35] = {8850, 4400, 500, 4400, 500, 4400, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 4400, 500, 2200, 500, 4400, 500, 4400, 500}; // UNKNOWN 37788763
 unsigned int  NEC4[35] = {8800, 4400, 500, 2200, 500, 2200, 500, 4400, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 4400, 500, 4400, 500}; // UNKNOWN A519853B
@@ -45,16 +45,13 @@ unsigned int  UP[35] = {8850, 4400, 500, 2200, 450, 2200, 500, 4400, 500, 2200, 
 unsigned int  DOWN[35] = {8850, 4400, 500, 4400, 500, 2150, 500, 4400, 500, 2200, 500, 4400, 500, 4400, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 4400, 500}; // UNKNOWN 5A1A483D
 unsigned int  OK[35] = {8850, 4400, 500, 4400, 500, 2200, 450, 2200, 500, 2200, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN CB3CC07F
 
-//int CS_PIN = 10;       // SD Pin
-//int counter = 1;       // Counter
-//int c = 1;             // Counter 2
 int xVal;
 int yVal;
-int jstickclick;
+int Click;
 
 
 const int IRledPin =  3;    // LED connected to digital pin 13
-const int LEDalert = 2;      //LED connected to digital pin 12 for the RTC alert
+const int LEDalert = 2;      //LED connected to digital pin 2 for the RTC alert
 //long int channel1 [] = {824, 9180, 4580, 500, 4580, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 4560, 520, 4560, 520, 4580, 500, 4580, 500, 31480, 9200, 2260, 520, 24644, 9180, 2280, 520};
 //long int channel2 [] = {35164, 9200, 4580, 500, 2280, 520, 4560, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2300, 500, 2280, 520, 2280, 500, 2280, 520, 4580, 500, 4580, 500, 4580, 520, 34580, 9180, 2280, 520};
 //long int channel3 [] = {6284, 9180, 4580, 500, 4580, 520, 4560, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 520, 2260, 520, 2280, 520, 2280, 500, 2280, 520, 2280, 500, 2300, 500, 4580, 500, 2280, 520, 4560, 520, 4580, 500, 31480, 9200, 2260, 520, 24644, 9200, 2260, 520};
@@ -72,27 +69,27 @@ const int ondemandpin = 9;    // OnDemand
 // The setup() method runs once, when the sketch starts
 
 void setup()   {
+   Serial.begin(9600);
+   Serial.print("in setup loop 1");
+
   // initialize the IR digital pin as an output:
 
-   if (!rtc.isrunning()) {
-    Serial.println("RTC is NOT running!");
-    // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(__DATE__, __TIME__));
-  }
-}
+//   if (!rtc.isrunning()) {
+//    Serial.println("RTC is NOT running!");
+//    // following line sets the RTC to the date & time this sketch was compiled
+//    rtc.adjust(DateTime(__DATE__, __TIME__));
+//  }
+//}
   
   pinMode(IRledPin, OUTPUT);
-  Serial.begin(9600);
-  Wire.begin();
 
+  Wire.begin();
 
   //this initializes the RTC and a pin as the output for an LED that will alert the user
 
   pinMode(LEDalert, OUTPUT);
-  Wire.begin();
-
   //The values below set the state for the RTC they should be enetered when the RTC is connected
-  rtc.setClockMode(false);
+//  rtc.setClockMode(false);
   pinMode(jstickVER_pin, INPUT);
   pinMode(jstickHOR_pin,INPUT);
   pinMode(jstickclick_pin,INPUT);
@@ -102,64 +99,71 @@ void setup()   {
   pinMode(TVonoffpin, INPUT);
   pinMode(ondemandpin, INPUT);
   pinMode(STBonoffpin, INPUT);
+ pinMode(interruptPin,INPUT_PULLUP);//Set pin d2 to input using the buildin pullup resistor
 
-      pinMode(interruptPin,INPUT_PULLUP);//Set pin d2 to input using the buildin pullup resistor
 }
 
 void loop()
 {
- 
+// Serial.print("in void loop");
   xVal = analogRead(jstickHOR_pin);
   yVal = analogRead(jstickVER_pin);
   Click = digitalRead(jstickclick_pin);
   
 
-if(xVal>800) {
-  irsend.sendRaw(LEFT,sizeof(LEFT),38);
-}
-
-
-if(xVal<200) {
+if(xVal<18) {
   irsend.sendRaw(RIGHT,sizeof(RIGHT),38);
 }
 
-if(yVal>800) {
-  irsend.sendRaw(DOWN,sizeof(DOWN),38);
+
+if(xVal>300) {
+  irsend.sendRaw(LEFT,sizeof(LEFT),38);
 }
-if(yVal<200) {
+
+if(yVal<300) {
   irsend.sendRaw(UP,sizeof(UP),38);
+}
+if(yVal>700) {
+  irsend.sendRaw(DOWN,sizeof(DOWN),38);
 }  
 if(Click==0) {
  irsend.sendRaw(OK,sizeof(OK),38);
 }
   // Checks if the buttons have been pressed
-  timeCheck();
-
+  
+// Serial.println("B4 tim3ch3ck");
+//// timeCheck();
+// Serial.println("After tim3ch3ck");
 //
-
+//Serial.println("I am about to debounce");
   //Volume up
  if(debounceButton(voluppin)==true){
+  Serial.print("VOLUP");
    irsend.sendRaw(VOLUP,sizeof(VOLUP),38);
    delay(100);
  }
 
   //Volume down
  if(debounceButton(voldownpin)==true){
+    Serial.print("VOLDOWN");
   irsend.sendRaw(VOLDOWN,sizeof(VOLDOWN),38);
  }
 
   //TV On/off
 if(debounceButton(TVonoffpin)==true){
+   Serial.print("TVONOFF");
   irsend.sendRaw(TVON,sizeof(TVON),38);
  }
  
  //STB On/off
  
  if(debounceButton(STBonoffpin)==true){
+   Serial.print("STBONOFF");
   irsend.sendRaw(STBON,sizeof(STBON),38);
  }
 
  if(debounceButton(ondemandpin)==true){
+   Serial.print("ONDEMAND");
   irsend.sendRaw(ONDEMAND,sizeof(ONDEMAND),38);
  }
 
@@ -179,7 +183,7 @@ if(debounceButton(TVonoffpin)==true){
     
     // Next Channel
     else {
-      irsend.sendRaw(NEC5, sizeof(NEC4), 38);
+      irsend.sendRaw(NEC5, sizeof(NEC5), 38);
            
       delay(100);
       i=0;
@@ -190,13 +194,14 @@ if(debounceButton(TVonoffpin)==true){
 }
 // Checks RTC Time
   void timeCheck(){
+  Serial.println("In tim3ch3ck!!!");
   bool h12 =false;
   bool PM =false;
   int h=rtc.getHour(h12, PM);   //these are both false because the rtc is in military mode
   int m=rtc.getMinute();
   int s=rtc.getSecond();
                              //the first parameter is checking if it is the 12 hour and the second is checking if it is PM
-  if(debounceButton(channelpin)==false){                //when the button is pressed the LED will turn off if not the LED will remain on from 5 minutes before the show to the time of the show
+  if(debounceButton(channelpin)==true){                //when the button is pressed the LED will turn off if not the LED will remain on from 5 minutes before the show to the time of the show
     digitalWrite(LEDalert, LOW);
     Serial.println("in button off");
   }
@@ -234,9 +239,8 @@ if(debounceButton(TVonoffpin)==true){
   int ondemandlbs=LOW;
   
   boolean debounceButton(int buttonPin){
-  
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
-unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+unsigned long debounceDelay = 200;    // the debounce time; increase if the output flickers
 
 int buttonState;             // the current reading from the input pin
   int lastButtonState = LOW;   // the previous reading from the input pin
@@ -282,27 +286,6 @@ int buttonState;             // the current reading from the input pin
   // check to see if you just pressed the button
   // (i.e. the input went from LOW to HIGH), and you've waited long enough
   // since the last press to ignore any noise:
-
-  // If the switch changed, due to noise or pressing:
-  if (reading != lastButtonState) {
-    // reset the debouncing timer
-    lastDebounceTime = millis();
-  }
-
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    // whatever the reading is at, it's been there for longer than the debounce
-    // delay, so take it as the actual current state:
-
-    // if the button state has changed:
-    if (reading != buttonState) {
-      buttonState = reading;
-
-      // only return true if the new button state is HIGH
-      if (buttonState == HIGH) {
-          return true;
-        }
-    }
-  }
   // save the reading. Next time through the loop, it'll be the lastButtonState
     lastButtonState = reading;
 
@@ -338,7 +321,28 @@ switch(buttonPin) {
       ondemandlbs = lastButtonState;
       break;
 }
-    
+
+  // If the switch changed, due to noise or pressing:
+  if (reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
+  
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // whatever the reading is at, it's been there for longer than the debounce
+    // delay, so take it as the actual current state:
+
+    // if the button state has changed:
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      // only return true if the new button state is HIGH
+      if (buttonState == HIGH) {
+          return true;
+        }
+    }
+  }
+    return false;  
   }
 
 
