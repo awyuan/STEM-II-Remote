@@ -2,12 +2,45 @@
 //Tutorials and examples from https://www.arduino.cc/en/Tutorial/Button were used to help with the code
 //The examples from https://www.arduinolibraries.info/libraries/ds3231 were very helpful with the implementation of the RTC
 //The DS3132 library was used for the RTC
+//Sleep Demo from https://playground.arduino.cc/Learning/ArduinoSleepCode was used. Below is the comment given in the code about usage rights
+/* Sleep Demo Serial
+ * -----------------
+ * Example code to demonstrate the sleep functions in an Arduino.
+ *
+ * use a resistor between RX and pin2. By default RX is pulled up to 5V
+ * therefore, we can use a sequence of Serial data forcing RX to 0, what
+ * will make pin2 go LOW activating INT0 external interrupt, bringing
+ * the MCU back to life
+ *
+ * there is also a time counter that will put the MCU to sleep after 10 secs
+ *
+ * NOTE: when coming back from POWER-DOWN mode, it takes a bit
+ *       until the system is functional at 100%!! (typically <1sec)
+ *
+ * Copyright (C) 2006 MacSimski 2006-12-30
+ * Copyright (C) 2007 D. Cuartielles 2007-07-08 - Mexico DF
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+// Code Starts Here
 #include <DS3231.h>  //This is the library for the RTC 
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <IRremote.h>
 #include <avr/sleep.h>//this AVR library contains the methods that controls the sleep modes
-#define interruptPin 13 //Pin we are going to use to wake up the Arduino
 DS3231 rtc;
 IRsend irsend;
 int RECV_PIN = 1;
@@ -19,10 +52,15 @@ int jstickHOR_pin = A1;
 int jstickclick_pin = 10; 
 boolean debounceButton(int buttonPin);
 
+// Sleep Variables
+int wakePin = 2;                 // pin used for waking up
+int sleepStatus = 0;             // variable to store a request for sleep
+int count = 0;                   // counter
+
 
 //measured using IRRecvDumpv2 and Arduino serial
 //This is where you will need to enter your oln codes that you take from the IR receiver 
-  unsigned int  NEC1[35] = {8850, 4400, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 4400, 450, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 92DF9279
+unsigned int  NEC1[35] = {8850, 4400, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 4400, 450, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 92DF9279
 unsigned int  NEC2[35] = {8850, 4400, 500, 2200, 450, 4450, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 87CDD0EF
 unsigned int  NEC3[35] = {8850, 4400, 500, 4400, 500, 4400, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 4400, 500, 2200, 500, 4400, 500, 4400, 500}; // UNKNOWN 37788763
 unsigned int  NEC4[35] = {8800, 4400, 500, 2200, 500, 2200, 500, 4400, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 4400, 500, 4400, 500}; // UNKNOWN A519853B
@@ -60,17 +98,25 @@ const int LEDalert = 2;      //LED connected to digital pin 2 for the RTC alert
 int i = 0;           //initializes the counter i to 0
 
 const int TVonoffpin = 4;     // TV
-const int voluppin = 7;    // Volume Up 
+const int voluppin = 7;       // Volume Up 
 const int voldownpin = 8;     // Volume Down
 const int STBonoffpin = 5;    // STB
 const int channelpin = 6;     // Channels
 const int ondemandpin = 9;    // OnDemand
 
+void wakeUpNow()        // here the interrupt is handled after wakeup
+{
+  // execute code here after wake-up before returning to the loop() function
+  // timers and code using timers (serial.print and more...) will not work here.
+  // we don't really need to execute any special functions here, since we
+  // just want the thing to wake up
+}
+
 // The setup() method runs once, when the sketch starts
 
 void setup()   {
    Serial.begin(9600);
-   Serial.print("in setup loop 1");
+   Serial.println("in setup loop 1");
 
   // initialize the IR digital pin as an output:
 
@@ -81,15 +127,14 @@ void setup()   {
 //  }
 //}
   
-  pinMode(IRledPin, OUTPUT);
-
   Wire.begin();
 
   //this initializes the RTC and a pin as the output for an LED that will alert the user
-
+  pinMode(wakePin, INPUT);
+  pinMode(IRledPin, OUTPUT);
   pinMode(LEDalert, OUTPUT);
   //The values below set the state for the RTC they should be enetered when the RTC is connected
-//  rtc.setClockMode(false);
+  rtc.setClockMode(false);
   pinMode(jstickVER_pin, INPUT);
   pinMode(jstickHOR_pin,INPUT);
   pinMode(jstickclick_pin,INPUT);
@@ -99,13 +144,30 @@ void setup()   {
   pinMode(TVonoffpin, INPUT);
   pinMode(ondemandpin, INPUT);
   pinMode(STBonoffpin, INPUT);
- pinMode(interruptPin,INPUT_PULLUP);//Set pin d2 to input using the buildin pullup resistor
+  //pinMode(wakePin,INPUT_PULLUP);//Set pin d2 to input using the buildin pullup resistor
 
+  /* Now it is time to enable an interrupt. In the function call
+   * attachInterrupt(A, B, C)
+   * A   can be either 0 or 1 for interrupts on pin 2 or 3.  
+   *
+   * B   Name of a function you want to execute while in interrupt A.
+   *
+   * C   Trigger mode of the interrupt pin. can be:
+   *             LOW        a low level trigger
+   *             CHANGE     a change in level trigger
+   *             RISING     a rising edge of a level trigger
+   *             FALLING    a falling edge of a level trigger
+   *
+   * In all but the IDLE sleep modes only LOW can be used.
+   */
+ 
+  attachInterrupt(0, wakeUpNow, LOW); // use interrupt 0 (pin 2) and run function
+                                      // wakeUpNow when pin 2 gets LOW
 }
 
 void loop()
 {
-// Serial.print("in void loop");
+//Serial.print("in void loop");
   xVal = analogRead(jstickHOR_pin);
   yVal = analogRead(jstickVER_pin);
   Click = digitalRead(jstickclick_pin);
@@ -132,7 +194,7 @@ if(Click==0) {
   // Checks if the buttons have been pressed
   
 // Serial.println("B4 tim3ch3ck");
-//// timeCheck();
+timeCheck();
 // Serial.println("After tim3ch3ck");
 //
 //Serial.println("I am about to debounce");
@@ -143,19 +205,19 @@ if(Click==0) {
    delay(100);
  }
 
-  //Volume down
+//Volume down
  if(debounceButton(voldownpin)==true){
     Serial.print("VOLDOWN");
   irsend.sendRaw(VOLDOWN,sizeof(VOLDOWN),38);
  }
 
-  //TV On/off
+//TV On/off
 if(debounceButton(TVonoffpin)==true){
    Serial.print("TVONOFF");
   irsend.sendRaw(TVON,sizeof(TVON),38);
  }
  
- //STB On/off
+//STB On/off
  
  if(debounceButton(STBonoffpin)==true){
    Serial.print("STBONOFF");
@@ -167,8 +229,7 @@ if(debounceButton(TVonoffpin)==true){
   irsend.sendRaw(ONDEMAND,sizeof(ONDEMAND),38);
  }
 
-  // If the button is pressed, enter the channel loop
-  for(int i=0;i<2;i++){
+// If the button is pressed, enter the channel loop
   if (debounceButton(channelpin) == true) {
     digitalWrite(LEDalert, LOW);
     Serial.println("In button state low");
@@ -177,20 +238,28 @@ if(debounceButton(TVonoffpin)==true){
       //    irsend.sendSony(0xa90, 12);
       delay(100); 
       irsend.sendRaw(NEC4, sizeof(NEC4), 38);
-      break; 
+      i++;
     }
     
     
-    // Next Channel
+// Next Channel
     else {
-      irsend.sendRaw(NEC5, sizeof(NEC5), 38);
-           
+      irsend.sendRaw(NEC5, sizeof(NEC5), 38); 
       delay(100);
       i=0;
-      break;
     }
   }
-}
+
+count++;
+  delay(1000);
+  if (count >= 30) {
+      Serial.println("Timer: Entering Sleep mode");
+      delay(100);     // this delay is needed, the sleep
+                      //function will provoke a Serial error otherwise!!
+      count = 0;
+      sleepNow();     // sleep function called here
+  }
+
 }
 // Checks RTC Time
   void timeCheck(){
@@ -224,21 +293,21 @@ if(debounceButton(TVonoffpin)==true){
 
 
 //this code was adapted from the Arduino DebounceButton example
- int TVonoffbs;
-  int volupbs;     
-  int voldownbs;    
-  int STBonoffbs;  
-  int channelbs;   
-  int ondemandbs;  
+int TVonoffbs;
+int volupbs;     
+int voldownbs;    
+int STBonoffbs;  
+int channelbs;   
+int ondemandbs;  
 
-  int TVonofflbs=LOW;
-  int voluplbs=LOW;     
-  int voldownlbs=LOW;    
-  int STBonofflbs=LOW;  
-  int channellbs=LOW;   
-  int ondemandlbs=LOW;
+int TVonofflbs=LOW;
+int voluplbs=LOW;     
+int voldownlbs=LOW;    
+int STBonofflbs=LOW;  
+int channellbs=LOW;   
+int ondemandlbs=LOW;
   
-  boolean debounceButton(int buttonPin){
+boolean debounceButton(int buttonPin){
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 200;    // the debounce time; increase if the output flickers
 
@@ -248,32 +317,32 @@ int buttonState;             // the current reading from the input pin
     switch(buttonPin) {
       
       case TVonoffpin:
-//      buttonState = TVonoffbs;             
+//    buttonState = TVonoffbs;             
       lastButtonState = TVonofflbs;   
       break;
       
       case voluppin:
-//      buttonState = volupbs;             
+//    buttonState = volupbs;             
       lastButtonState = voluplbs;   
       break;
 
       case voldownpin:
-//      buttonState = voldownbs;             
+//    buttonState = voldownbs;             
       lastButtonState = voldownlbs;
       break;
       
       case STBonoffpin:
-//      buttonState = STBonoffbs;             
+//    buttonState = STBonoffbs;             
       lastButtonState = STBonofflbs;
       break;
 
       case channelpin:
-//      buttonState = channelpinbs;             
+//    buttonState = channelpinbs;             
       lastButtonState = channellbs;
       break;
       
       case ondemandpin:   
-//      buttonState = ondemandbs;             
+//    buttonState = ondemandbs;             
       lastButtonState = ondemandlbs;
       break;
 }
@@ -292,32 +361,32 @@ int buttonState;             // the current reading from the input pin
 switch(buttonPin) {
       
       case TVonoffpin:
-//      buttonState = TVonoffbs;             
+//    buttonState = TVonoffbs;             
       TVonofflbs = lastButtonState ;   
       break;
       
       case voluppin:
-//      buttonState = volupbs;             
+//    buttonState = volupbs;             
       voluplbs = lastButtonState;   
       break;
 
       case voldownpin:
-//      buttonState = voldownbs;             
+//    buttonState = voldownbs;             
       voldownlbs = lastButtonState;
       break;
       
       case STBonoffpin:
-//      buttonState = STBonoffbs;             
+//    buttonState = STBonoffbs;             
       STBonofflbs = lastButtonState;
       break;
 
       case channelpin:
-//      buttonState = channelpinbs;             
+//    buttonState = channelpinbs;             
       channellbs = lastButtonState;
       break;
       
       case ondemandpin:   
-//      buttonState = ondemandbs;             
+//    buttonState = ondemandbs;             
       ondemandlbs = lastButtonState;
       break;
 }
@@ -344,5 +413,69 @@ switch(buttonPin) {
   }
     return false;  
   }
+
+
+void sleepNow()         // here we put the arduino to sleep
+{
+    /* Now is the time to set the sleep mode. In the Atmega8 datasheet
+     * http://www.atmel.com/dyn/resources/prod_documents/doc2486.pdf on page 35
+     * there is a list of sleep modes which explains which clocks and
+     * wake up sources are available in which sleep mode.
+     *
+     * In the avr/sleep.h file, the call names of these sleep modes are to be found:
+     *
+     * The 5 different modes are:
+     *     SLEEP_MODE_IDLE         -the least power savings
+     *     SLEEP_MODE_ADC
+     *     SLEEP_MODE_PWR_SAVE
+     *     SLEEP_MODE_STANDBY
+     *     SLEEP_MODE_PWR_DOWN     -the most power savings
+     *
+     * For now, we want as much power savings as possible, so we
+     * choose the according
+     * sleep mode: SLEEP_MODE_PWR_DOWN
+     *
+     */  
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here
+ 
+    sleep_enable();          // enables the sleep bit in the mcucr register
+                             // so sleep is possible. just a safety pin
+ 
+    /* Now it is time to enable an interrupt. We do it here so an
+     * accidentally pushed interrupt button doesn't interrupt
+     * our running program. if you want to be able to run
+     * interrupt code besides the sleep function, place it in
+     * setup() for example.
+     *
+     * In the function call attachInterrupt(A, B, C)
+     * A   can be either 0 or 1 for interrupts on pin 2 or 3.  
+     *
+     * B   Name of a function you want to execute at interrupt for A.
+     *
+     * C   Trigger mode of the interrupt pin. can be:
+     *             LOW        a low level triggers
+     *             CHANGE     a change in level triggers
+     *             RISING     a rising edge of a level triggers
+     *             FALLING    a falling edge of a level triggers
+     *
+     * In all but the IDLE sleep modes only LOW can be used.
+     */
+ 
+    attachInterrupt(0,wakeUpNow, LOW); // use interrupt 0 (pin 2) and run function
+                                       // wakeUpNow when pin 2 gets LOW
+ 
+    sleep_mode();            // here the device is actually put to sleep!!
+                             // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+ 
+    sleep_disable();         // first thing after waking from sleep:
+                             // disable sleep...
+    detachInterrupt(0);      // disables interrupt 0 on pin 2 so the
+                             // wakeUpNow code will not be executed
+                             // during normal running time.
+ 
+}
+
+
+
 
 
