@@ -41,10 +41,10 @@ Check out [this](https://github.com/z3t0/Arduino-IRremote/blob/master/examples/I
 Check out [this](https://github.com/z3t0/Arduino-IRremote/blob/master/examples/IRsendDemo/IRsendDemo.ino) demo if you want to see how to send **hexadecmial signals**. You should be able to measure these using the receiving demo above. It could be less complicated to send these types of signals.
 
 ## RTC library
-We used the [DS3231 RTC](https://amzn.to/2Uaj8ik) in order to keep track of the time, so that we could automatically switch the channel on our client's television each hour. For a smaller, more convenient RTC consider [this one](https://www.adafruit.com/product/3013)
-We modified the starting code of a button from [this article](http://www.instructables.com/id/How-to-control-your-TV-with-an-Arduino/)
-Tutorials and examples found [here](https://www.arduino.cc/en/Tutorial/Button) were used to help with the code
-The [examples](https://www.arduinolibraries.info/libraries/ds3231) were very helpful with the implementation of the RTC
+We used the [DS3231 RTC](https://amzn.to/2Uaj8ik) in order to keep track of the time, so that we could automatically switch the channel on our client's television each hour. For a smaller, more convenient RTC consider [this one](https://www.adafruit.com/product/3013).
+We modified the starting code of a button from [this article](http://www.instructables.com/id/How-to-control-your-TV-with-an-Arduino/).
+Tutorials and examples found [here](https://www.arduino.cc/en/Tutorial/Button) were used to help with the code.
+The [examples](https://www.arduinolibraries.info/libraries/ds3231) were very helpful with the implementation of the RTC.
 This [DS3231 library](https://github.com/NorthernWidget/DS3231) was used for the RTC.
 
 ## Joystick
