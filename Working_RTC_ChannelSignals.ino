@@ -26,6 +26,12 @@ decode_results results;
   long NEC_0 = 0x28;
 */
 //measured using IRRecvDumpv2 and Arduino serial
+
+/*  WARNING (PLEASE READ !!!!!!!!):
+    Even if you need to save space on your chip, do not make the following signals const arrays. We changed them to save space,
+    and making them consts corrupts the arrays and makes it so that none of them work correctly.
+*/
+
 unsigned int  NEC1[35] = {8850, 4400, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 4400, 450, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 92DF9279
 unsigned int  NEC2[35] = {8850, 4400, 500, 2200, 450, 4450, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 87CDD0EF
 unsigned int  NEC3[35] = {8850, 4400, 500, 4400, 500, 4400, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 4400, 500, 2200, 500, 4400, 500, 4400, 500}; // UNKNOWN 37788763
@@ -68,6 +74,9 @@ int buttonState;   //initializes the button reader variable
 
 // The setup() method runs once, when the sketch starts
 
+/*
+  PURPOSE: Initializes the infrared LED, the button, the Real Time Clock (RTC) and the SD card reader.
+*/
 void setup()   {
   // initialize the IR digital pin as an output:
   pinMode(IRledPin, OUTPUT);
@@ -78,13 +87,12 @@ void setup()   {
   initializeSD();
   irrecv.enableIRIn();
 
-
   //this initializes the RTC and a pin as the output for an LED that will alert the user
 
   pinMode(LEDalert, OUTPUT);
   Wire.begin();
 
-  //The values below set the state for the RTC they should be enetered when the RTC is connected
+  //The values below set the state for the RTC they should be entered when the RTC is connected
   rtc.setClockMode(false);
   rtc.setDoW(6); //this is only a sample day for now and 1 would mean that it is Sunday
   rtc.setMonth(4); //this sets the month of the RTC to April because it is the first month
@@ -95,6 +103,10 @@ void setup()   {
   rtc.setSecond(50);
 }
 
+/*
+  PURPOSE: On each clock cycle, checks if the button is being pressed. We used pull up buttons, so when they are pressed
+  they read as LOW and when they are read as HIGH. We chose pull up buttons because
+*/
 void loop()
 {
   //timeCheck();
@@ -104,20 +116,28 @@ void loop()
   if (buttonState == LOW) {
     digitalWrite(LEDalert, LOW);
     Serial.println("In button state low");
+
+    // sends the first channel of the favorite channels
     if (i == 0) {
       Serial.println("In if loop");
       //    irsend.sendSony(0xa90, 12);
+
+      // turns on the sending led to indicate that a channel is being sent
       digitalWrite(LEDalert, HIGH);
-      digitalWrite(LEDalert, LOW);
       delay(100);
+      digitalWrite(LEDalert, LOW);
       i++;
       
+      // opens the file containing channel signals
       openFile("channels.txt");
-      if(c<counter+1){
+      
+    // prints the channels to the serial monitor 
+    if(c<counter+1){
       for(int cmCheck = 0; cmCheck<c; cmCheck++){
         channel = atol(readLine().c_str());
         Serial.println(channel);
       }
+      // this line sends the signal for the first of the favorites
       irsend.sendRaw(NEC2, sizeof(NEC2), 38);
       c++;
     }
@@ -129,15 +149,18 @@ void loop()
       i++;
     }
     
+    // sends the second channel of the favorite channels
     else if (i == 1) {
       if(c<counter+1){
       for(int cmCheck = 0; cmCheck<c; cmCheck++){
         channel = atol(readLine().c_str());
         Serial.println(channel);
       }
+      // this line sends the signal for the second of the favorites
       irsend.sendRaw(NEC5, sizeof(NEC5), 38);
       c++;
     }
+    // resets the line counter
     else{
       c=1;
     }
@@ -146,13 +169,14 @@ void loop()
       delay(100);
       i++;
     }
-
+    // sends the third channel in the favorite channels
     else {
         if(c<counter+1){
       for(int cmCheck = 0; cmCheck<c; cmCheck++){
         channel = atol(readLine().c_str());
         Serial.println(channel);
       }
+      // this line sends the signal for the third of the favorites
       irsend.sendRaw(NEC7, sizeof(NEC7), 38);
       delay(100);
       i = 0;
@@ -182,9 +206,7 @@ void pulseIR(long microsecs) {
   sei();  // this turns them back on
 }
 
-//This method checks the time with the rtc and sets that time to a variable
-
-
+//PURPOSE: checks the time with the rtc and sets that time to a variable
   void timeCheck(){
   bool h12 =false;
   bool PM =false;
@@ -221,6 +243,8 @@ void pulseIR(long microsecs) {
     digitalWrite(LEDalert, HIGH);
   }
   }
+
+// PURPOSE: Initializes the sd card for reading and writing
 void initializeSD()
 {
   Serial.println("Initializing SD card...");

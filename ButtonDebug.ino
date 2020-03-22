@@ -18,8 +18,13 @@ int buttonState3;
 int buttonState4;
 int buttonState5;
 
-// The setup() method runs once, when the sketch starts
-
+/* The setup() method runs once, when the sketch starts
+ PURPOSE: initalizes the pins on the Arduino which the button remotes were wired to
+ They are all set as INPUT so that digitalRead() can be called to get their voltage.
+ The buttons are all set to HIGH because we used pull up buttons, which should be HIGH
+ by default. This is because pull up buttons produce voltage when not pressed, and
+ halt voltage when being pressed.
+*/
 void setup()   {
   pinMode(buttonPin, INPUT);
   pinMode(buttonPin1, INPUT);
@@ -37,6 +42,13 @@ void setup()   {
   Wire.begin();  
 }
 
+/*
+  PURPOSE: Reads the button state at each cycle. If the digitalRead() returns LOW,
+  that means the button is being pressed. Remember, this is because we used pull
+  up buttons, which are HIGH when being pressed and LOW when released. If you use,
+  standard buttons, this would be flipped. We used pull-up buttons so that our remote
+  would not be susceptible to false positives from background signals.
+*/
 void loop()
 {
   buttonState = digitalRead(buttonPin);

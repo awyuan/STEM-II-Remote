@@ -1,7 +1,7 @@
 //Modified the starting code of a button from http://www.instructables.com/id/How-to-control-your-TV-with-an-Arduino/
 //Tutorials and examples from https://www.arduino.cc/en/Tutorial/Button were used to help with the code
 //The examples from https://www.arduinolibraries.info/libraries/ds3231 were very helpful with the implementation of the RTC
-//The DS3132 library was used for the RTC
+//The DS3231 library was used for the RTC
 #include <DS3231.h>  //This is the library for the RTC 
 #include <Wire.h>
 #include <LiquidCrystal.h>
@@ -27,6 +27,11 @@ decode_results results;
 */
 //measured using IRRecvDumpv2 and Arduino serial
 //This is where you will need to enter your oln codes that you take from the IR receiver 
+
+/*
+  PURPOSE: These are the channel signals which we measured from our client's television remote. You will need an infrared receiver
+  such as the one found at https://www.sparkfun.com/products/10266 in order to measure these signals.
+*/
 unsigned int  NEC1[35] = {8850, 4400, 500, 4400, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 4400, 450, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 92DF9279
 unsigned int  NEC2[35] = {8850, 4400, 500, 2200, 450, 4450, 500, 2150, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 2200, 500, 4400, 500, 4400, 500, 4400, 500}; // UNKNOWN 87CDD0EF
 unsigned int  NEC3[35] = {8850, 4400, 500, 4400, 500, 4400, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 450, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2200, 500, 2150, 500, 4400, 500, 2200, 500, 4400, 500, 4400, 500}; // UNKNOWN 37788763
