@@ -6,9 +6,9 @@ The remote was developed by Krish Nathan, Victoria Bowen, Andrew Yuan, and Joyce
 If you have any questions about the code here, you can reach out to Krish at krishnathan2019@gmail.com.
 
 ## Working Code
-The working code which we uploaded to our client's remote is *Working_RTC_ChannelSignals.ino*. This sketch incorporates the infrared LED, the real time clock (RTC), and the joystick. You will need to make a .txt file named *channels.txt* with each channel
+The working code which we uploaded to our client's remote is *Working_RTC_ChannelSignals.ino*. This sketch incorporates the infrared LED, the real time clock (RTC), and the joystick. You may need to make a .txt file named *channels.txt* with each of your channel signals on a separate line. Then add the .txt file to your SD card through an SD card reader module. You could also choose to store your channels as arrays in the sketch, not as a .txt file on the SD card. However, you might run into memory constraints.
 
-However, if you want a simpler sketch which just contains essential remote code, check out *Remote_Example_revised.ino*. The sketch only contains the code for sending different channel signals in a cycle. The sketch is easier to understand, and it works if you do not need an RTC or joystick.
+If you want a simpler sketch which just contains essential remote code, check out *Remote_Example_revised.ino*. The sketch only contains the code for sending different channel signals in a cycle. The sketch is easier to understand, and it works if you do not need an RTC or joystick.
 
 ## Arduino Board
 We used the [Arduino Pro Mini board](https://www.sparkfun.com/products/11113)
