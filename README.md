@@ -38,7 +38,7 @@ in your arduino IDE and change the *recvPin* field to match the pin your receive
 
 Check out [this](https://github.com/z3t0/Arduino-IRremote/blob/master/examples/IRsendRawDemo/IRsendRawDemo.ino) demo if you want to see how to send *raw signals* from the infrared LED. Raw signals are an array of integers which represents alternating delays and 38Khz pulses. Each integer is the length of the delay or pulse in microseconds. This is how we ended up sending signals from our remote
 
-Check out [this](https://github.com/z3t0/Arduino-IRremote/blob/master/examples/IRsendDemo/IRsendDemo.ino) demo if you want to see how to send hexadecmial signals. You should be able to measure these using the receiving demo above. It could be less complicated to send these types of signals.**
+Check out [this](https://github.com/z3t0/Arduino-IRremote/blob/master/examples/IRsendDemo/IRsendDemo.ino) demo if you want to see how to send **hexadecmial signals**. You should be able to measure these using the receiving demo above. It could be less complicated to send these types of signals.
 
 ## RTC library
 We used the [DS3231 RTC](https://amzn.to/2Uaj8ik) in order to keep track of the time, so that we could automatically switch the channel on our client's television each hour. For a smaller, more convenient RTC consider [this one](https://www.adafruit.com/product/3013)
